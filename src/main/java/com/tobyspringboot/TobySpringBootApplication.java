@@ -9,7 +9,7 @@ import org.apache.catalina.LifecycleException;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServer;
 import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
-import org.springframework.http.HttpHeaders;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -17,11 +17,13 @@ import org.springframework.http.MediaType;
 public class TobySpringBootApplication {
 
     public static void main(String[] args) throws LifecycleException {
+
+        GenericApplicationContext applicationContext = new GenericApplicationContext();
+        applicationContext.registerBean(HelloController.class);
+        applicationContext.registerBean(SimpleHelloService.class);
+
         ServletWebServerFactory serverFactory = new TomcatServletWebServerFactory();
         WebServer webServer = serverFactory.getWebServer(servletContext -> {
-
-            HelloController helloController = new HelloController();
-
             servletContext.addServlet("frontController", new HttpServlet() {
 
                 @Override
@@ -31,15 +33,14 @@ public class TobySpringBootApplication {
 
                     if (requestURI.equals("/hello") && methodName.equals(HttpMethod.GET.name())) {
                         String name = req.getParameter("name");
+
+                        HelloController helloController = applicationContext.getBean(HelloController.class);
                         String returnValue = helloController.hello(name);
 
-                        resp.setStatus(HttpStatus.OK.value());
-                        resp.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN_VALUE);
+                        resp.setContentType(MediaType.TEXT_PLAIN_VALUE);
                         resp.getWriter().println(returnValue);
 
-                    } else if (requestURI.equals("/user")) {
-
-                    }else{
+                    } else {
                         resp.setStatus(HttpStatus.NOT_FOUND.value());
                     }
 
